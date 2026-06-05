@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💑 我们的专属回忆空间 | 风吹过四季，而我只奔向你</title>
+    <meta name="description" content="记录我和伴侣之间的宝贵回忆、浪漫时光与点滴点滴，专属我们两个人的秘密花园。">
+    
+    <!-- 引入高品质 Google 字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="styles.css?v=1.0.11">
+</head>
+<body class="light-theme">
+    <!-- 背景浮光粒子画布 -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- 顶部导航栏 -->
+    <header class="navbar">
+        <div class="logo" id="logoMenuToggle" role="button" tabindex="0" aria-label="切换导航菜单" aria-expanded="false">
+            <span class="heart-icon">💖</span>
+            <span class="logo-text">Our Forever</span>
+        </div>
+        <nav class="nav-links">
+            <a href="#hero" class="active">首页</a>
+            <a href="#photo-wall">照片墙</a>
+            <a href="#timeline">时光轴</a>
+            <a href="#moments">美好瞬间</a>
+            <a href="#board">时空留言</a>
+        </nav>
+        <div class="nav-actions">
+            <!-- 纪念日设置按钮 (只有编辑者/管理员可见) -->
+            <button id="configBtn" class="icon-btn editor-only" title="修改纪念日" aria-label="修改纪念日">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            </button>
+            <!-- 管理员面板按钮 -->
+            <button id="adminPanelBtn" class="icon-btn admin-only" title="管理员面板" aria-label="管理员面板">🛠️</button>
+            <!-- 主题切换 -->
+            <button id="themeToggleBtn" class="icon-btn" title="切换主题" aria-label="切换主题">
+                <svg id="sunIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                <svg id="moonIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather" style="display:none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </button>
+            <!-- 进入/退出编辑模式 -->
+            <button id="editModeBtn" class="icon-btn" title="进入编辑模式" aria-label="进入编辑模式">✎</button>
+            <button id="logoutEditBtn" class="icon-btn hidden" title="退出编辑模式" aria-label="退出编辑模式">⎋</button>
+        </div>
+    </header>
+
+    <!-- 迷你悬浮音乐盒 -->
+    <div id="musicPlayer" class="music-player">
+        <div class="player-body">
+            <div class="disc-container">
+                <div class="disc" id="playerDisc">
+                    <div class="disc-center"></div>
+                </div>
+            </div>
+            <div class="track-info">
+                <div class="track-title" id="trackTitle">Schoolgirl byebye - 爱是</div>
+                <div class="track-artist">Schoolgirl byebye</div>
+                <div class="player-controls">
+                    <button id="prevBtn" class="player-btn" aria-label="上一首">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>
+                    </button>
+                    <button id="playBtn" class="player-btn play-pause-btn" aria-label="播放">
+                        <svg id="playIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        <svg id="pauseIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                    </button>
+                    <button id="nextBtn" class="player-btn" aria-label="下一首">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>
+                    </button>
+                    
+                    <!-- 播放模式切换按钮 -->
+                    <button id="playModeBtn" class="player-btn" aria-label="播放模式" title="列表循环">
+                        <!-- 列表循环图标 -->
+                        <svg id="loopListIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-repeat"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+                        <!-- 单曲循环图标 -->
+                        <svg id="loopSingleIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-repeat" style="display: none;"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path><text x="12" y="15" font-size="9" font-family="Montserrat, sans-serif" font-weight="bold" fill="currentColor" text-anchor="middle">1</text></svg>
+                    </button>
+                    
+                    <!-- 歌单切换组件 -->
+                    <div class="player-control-item playlist-control">
+                        <button id="playlistBtn" class="player-btn" aria-label="歌单列表" title="歌单">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                        </button>
+                        <div class="playlist-dropdown" id="playlistDropdown">
+                            <!-- 由 JS 动态填充歌曲列表 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 音量调节组件 -->
+                    <div class="player-control-item volume-control">
+                        <button id="volumeBtn" class="player-btn" aria-label="音量调节" title="音量">
+                            <svg id="volumeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                        </button>
+                        <div class="volume-slider-wrapper">
+                            <input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step="0.05" value="0.8" orient="vertical">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 隐形音频播放源 (Schoolgirl byebye - 爱是) -->
+        <audio id="audioSource" playsinline src="assets/love_is.mp3" preload="auto"></audio>
+    </div>
+
+    <!-- 1. 首屏 & 纪念日实时计时 -->
+    <section id="hero" class="hero-section">
+        <div class="hero-content">
+            <div class="couple-names">
+                <img src="assets/sv_sebastian.png" class="couple-avatar" alt="Sebastian">
+                <span class="name first-name">邓子杰</span>
+                <span class="love-connector">❤</span>
+                <span class="name second-name">胡珊珊</span>
+                <img src="assets/sv_haley.png" class="couple-avatar" alt="Haley">
+            </div>
+            <div class="stardew-wedding-scene" aria-label="星露谷婚礼纪念照">
+                <div class="stardew-hut-side stardew-hut-side-left" aria-hidden="true">
+                    <img src="assets/junimo_hut.png" class="stardew-hut" alt="">
+                    <img src="assets/junimo_hut.png" class="stardew-hut" alt="">
+                </div>
+                <figure class="stardew-wedding-frame">
+                    <img src="assets/stardew_wedding.png" alt="星露谷婚礼纪念照">
+                </figure>
+                <div class="stardew-hut-side stardew-hut-side-right" aria-hidden="true">
+                    <img src="assets/junimo_hut.png" class="stardew-hut" alt="">
+                    <img src="assets/junimo_hut.png" class="stardew-hut" alt="">
+                </div>
+                <!-- 移动端专属跳动的祝尼魔 -->
+                <div class="stardew-mobile-junimos" aria-hidden="true">
+                    <img src="assets/sv_junimo.gif" alt="Junimo" class="sv-sprite sv-tint-green" style="--delay: 0s;">
+                    <img src="assets/sv_junimo.gif" alt="Junimo" class="sv-sprite sv-tint-pink" style="--delay: 0.2s;">
+                    <img src="assets/sv_junimo.gif" alt="Junimo" class="sv-sprite sv-tint-blue" style="--delay: 0.4s;">
+                    <img src="assets/sv_junimo.gif" alt="Junimo" class="sv-sprite sv-tint-yellow" style="--delay: 0.6s;">
+                    <img src="assets/sv_junimo.gif" alt="Junimo" class="sv-sprite sv-tint-purple" style="--delay: 0.8s;">
+                </div>
+            </div>
+            <h1 class="hero-quote">“风吹过四季，而我只奔向你。”</h1>
+            
+            <div class="anniversary-layout">
+                <div class="counter-container glass-card">
+                    <!-- 星露谷物语装饰精灵 -->
+                    <div class="sv-decor sv-decor-left" title="祝尼魔！">
+                        <img src="assets/sv_junimo.gif" alt="Junimo" class="sv-sprite sv-bounce">
+                    </div>
+                    <div class="sv-decor sv-decor-right" title="蓝小鸡！">
+                        <img src="assets/sv_blue_chicken.png" alt="Blue Chicken" class="sv-sprite sv-hop">
+                    </div>
+                    <!-- 顶部依然保留可爱的星露谷祝尼魔 -->
+                    <div class="sv-decor-top-peeking" title="探头祝尼魔">
+                        <img src="assets/sv_junimo.gif" alt="Peeking Junimo" class="sv-sprite sv-peek sv-tint-pink">
+                    </div>
+                    <div class="sv-decor-top-left" title="打瞌睡的祝尼魔">
+                        <img src="assets/sv_junimo.gif" alt="Sleeping Junimo" class="sv-sprite sv-sleep sv-tint-yellow">
+                    </div>
+                    <div class="counter-title">我们已经一起走过了</div>
+                    <div id="liveCounter" class="live-counter">
+                        <div class="counter-item">
+                            <span class="number" id="daysVal">000</span>
+                            <span class="unit">天</span>
+                        </div>
+                        <div class="counter-item">
+                            <span class="number" id="hoursVal">00</span>
+                            <span class="unit">小时</span>
+                        </div>
+                        <div class="counter-item">
+                            <span class="number" id="minsVal">00</span>
+                            <span class="unit">分</span>
+                        </div>
+                        <div class="counter-item">
+                            <span class="number" id="secsVal">00</span>
+                            <span class="unit">秒</span>
+                        </div>
+                    </div>
+                    <div class="anniversary-date">
+                        纪念日：<span id="anniversaryDisplay">2024年6月27日</span>
+                    </div>
+                </div>
+
+                <aside class="milestone-card glass-card" aria-label="重要日期倒计时">
+                    <div class="milestone-eyebrow">重要小日子</div>
+                    <div class="milestone-row">
+                        <div>
+                            <div class="milestone-label">最近生日</div>
+                            <div class="milestone-title" id="nextBirthdayName">加载中</div>
+                            <div class="milestone-date" id="nextBirthdayDate">--月--日</div>
+                        </div>
+                        <div class="milestone-count">
+                            <span id="nextBirthdayDays">--</span>
+                            <small>天</small>
+                        </div>
+                    </div>
+                    <div class="milestone-divider"></div>
+                    <div class="milestone-row">
+                        <div>
+                            <div class="milestone-label">距离纪念日</div>
+                            <div class="milestone-title">下一个周年</div>
+                            <div class="milestone-date" id="nextAnniversaryDate">--月--日</div>
+                        </div>
+                        <div class="milestone-count">
+                            <span id="nextAnniversaryDays">--</span>
+                            <small>天</small>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+        <div class="scroll-down-arrow">
+            <a href="#photo-wall" aria-label="向下滚动">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </a>
+        </div>
+    </section>
+
+    <!-- 2. 照片墙 -->
+    <section id="photo-wall" class="section-container photo-wall-section" aria-label="我们的照片墙">
+        <div class="section-header">
+            <h2 class="section-title">我们的照片墙 <span>/ Photo Wall</span></h2>
+            <p class="section-desc">把一路走过的日子，随手贴成一面温柔的墙。</p>
+            <button id="addPhotoWallBtn" class="primary-btn editor-only" style="margin-top: 20px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;margin-right:8px;"><path d="M12 5v14M5 12h14"></path></svg>
+                添加照片
+            </button>
+        </div>
+        <div id="memoryPhotoWall" class="memory-wall-stage">
+            <!-- 由 JS 动态填充独立照片墙 -->
+        </div>
+    </section>
+
+    <!-- 2. 时光轴（我们的故事） -->
+    <section id="timeline" class="section-container">
+        <div class="section-header">
+            <h2 class="section-title">时光轴 <span>/ Our Story</span></h2>
+            <p class="section-desc">细数我们曾走过的每一步，那些闪光的瞬间</p>
+            <div class="filter-controls">
+                <button class="filter-btn active" data-filter="all">全部</button>
+                <button class="filter-btn" data-filter="milestone">里程碑</button>
+                <button class="filter-btn" data-filter="travel">旅行记事</button>
+                <button class="filter-btn" data-filter="daily">日常生活</button>
+            </div>
+            <button id="addTimelineBtn" class="primary-btn editor-only" style="margin-top: 20px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;margin-right:8px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                添加新时光
+            </button>
+        </div>
+
+        <div class="timeline-wrapper">
+            <!-- 时光轴中心线 -->
+            <div class="timeline-line"></div>
+
+        </div>
+    </section>
+
+    <!-- 3. 美好瞬间 (Little Moments) -->
+    <section id="moments" class="section-container">
+        <div class="section-header">
+            <h2 class="section-title">美好瞬间 <span>/ Little Moments</span></h2>
+            <p class="section-desc">细碎日子里的微小闪光，都是值得被珍藏的温暖</p>
+            <button id="addMomentBtn" class="primary-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;margin-right:8px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                记录小瞬间
+            </button>
+        </div>
+        <div id="momentsGrid" class="moments-grid">
+            <!-- 由 JS 动态填充卡片 -->
+        </div>
+    </section>
+
+    <!-- 4. 时空留言（留言墙） -->
+    <section id="board" class="section-container">
+        <div class="section-header">
+            <h2 class="section-title">时空留言 <span>/ Memory Board</span></h2>
+            <p class="section-desc">在这里写下你的碎碎念，悄悄话，或是未来的小小憧憬</p>
+            <button id="addNoteBtn" class="primary-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;margin-right:8px;"><path d="M12 5v14M5 12h14"></path></svg>
+                添加新留言
+            </button>
+        </div>
+
+        <!-- 留言板卡片容器 -->
+        <div id="corkboard" class="corkboard">
+            <!-- 动态填充留言卡片 -->
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p>© 2026 邓子杰 & 胡珊珊. Made with 💖. </p>
+        <p>愿时光能缓，愿故人不散。</p>
+    </footer>
+
+    <!-- 回忆详情灯箱 (Lightbox Modal) -->
+    <div id="lightboxModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content glass-card zoom-in">
+            <button id="closeLightbox" class="close-btn" aria-label="关闭">&times;</button>
+            <div class="lightbox-body">
+                <img id="lightboxImg" src="" alt="大图预览">
+                <div class="lightbox-info">
+                    <h3 id="lightboxTitle"></h3>
+                    <span id="lightboxDate" class="lightbox-date"></span>
+                    <p id="lightboxDesc"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加留言弹窗 (Add Note Modal) -->
+    <div id="noteModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content glass-card zoom-in">
+            <button id="closeNoteModal" class="close-btn" aria-label="关闭">&times;</button>
+            <h3>新建悄悄话 💬</h3>
+            <form id="noteForm" class="note-form">
+                <div class="form-group">
+                    <label for="authorName">署名</label>
+                    <input type="text" id="authorName" placeholder="写下你的名字..." required maxlength="10">
+                </div>
+                <div class="form-group">
+                    <label for="noteContent">内容</label>
+                    <textarea id="noteContent" rows="4" placeholder="在这里写下想对TA说的话..." required maxlength="200"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>信纸颜色</label>
+                    <div class="color-picker">
+                        <div class="color-option option-yellow active" data-color="yellow" style="background:#FFF9C4;"></div>
+                        <div class="color-option option-pink" data-color="pink" style="background:#F8BBD0;"></div>
+                        <div class="color-option option-blue" data-color="blue" style="background:#B3E5FC;"></div>
+                        <div class="color-option option-green" data-color="green" style="background:#C8E6C9;"></div>
+                        <div class="color-option option-purple" data-color="purple" style="background:#E1BEE7;"></div>
+                    </div>
+                </div>
+                <button type="submit" class="submit-btn">固定到留言板</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 修改纪念日弹窗 (Config Date Modal) -->
+    <div id="configModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content glass-card zoom-in">
+            <button id="closeConfigModal" class="close-btn" aria-label="关闭">&times;</button>
+            <h3>修改恋爱纪念日 📅</h3>
+            <form id="configForm" class="config-form">
+                <div class="form-group">
+                    <label for="partnerName">TA的称呼</label>
+                    <input type="text" id="partnerName" value="胡珊珊" required maxlength="12">
+                </div>
+                <div class="form-group">
+                    <label for="anniversaryInput">纪念日起始日</label>
+                    <input type="date" id="anniversaryInput" required>
+                </div>
+                <div class="form-group">
+                    <label for="bgMusicSelect">背景音乐</label>
+                    <select id="bgMusicSelect">
+                        <option value="assets/love_is.mp3">Schoolgirl byebye - 爱是</option>
+                        <option value="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3">温柔时光 (Acoustic Guitar)</option>
+                        <option value="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3">海浪晚风 (Melancholy Synth)</option>
+                        <option value="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3">星空漫步 (Cosmic Ambient)</option>
+                    </select>
+                </div>
+                <button type="submit" class="submit-btn">保存设置</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 添加/编辑瞬间弹窗 (Add/Edit Moment Modal) -->
+    <div id="momentModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content glass-card zoom-in">
+            <button id="closeMomentModal" class="close-btn" aria-label="关闭">&times;</button>
+            <h3 id="momentModalTitle">记录这刻的小美好 ✨</h3>
+            <form id="momentForm" class="moment-form">
+                <div class="form-group">
+                    <label for="momentContent">美好的瞬间</label>
+                    <textarea id="momentContent" rows="3" placeholder="写下发生的小事情，比如：今天一起喝了第一杯奶茶..." required maxlength="120"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="momentDate">日期</label>
+                        <input type="date" id="momentDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="momentTag">类别/心情</label>
+                        <select id="momentTag" required>
+                            <option value="🍰,甜食">🍰 甜食</option>
+                            <option value="🎒,散步">🎒 散步</option>
+                            <option value="🐱,宠物">🐱 宠物</option>
+                            <option value="🎮,游戏">🎮 游戏</option>
+                            <option value="🎁,礼物">🎁 礼物</option>
+                            <option value="☔,晴雨">☔ 晴雨</option>
+                            <option value="🌸,日常" selected>🌸 日常</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>瞬间照片 (支持多张)</label>
+                    <div class="moment-image-uploader">
+                        <label for="momentPhotosInput" class="upload-placeholder">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px;height:24px;margin-bottom:6px;opacity:0.8;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                            <span>点击选择本地照片或拖拽至此</span>
+                        </label>
+                        <input type="file" id="momentPhotosInput" accept="image/*" multiple style="display:none;">
+                    </div>
+                    <div id="momentPhotosPreview" class="photos-preview-container">
+                        <!-- 动态渲染已上传图片预览 -->
+                    </div>
+                </div>
+                <button type="submit" id="momentSubmitBtn" class="submit-btn">收入美好集</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 添加/编辑照片墙照片弹窗 (Add/Edit Photo Wall Modal) -->
+    <div id="photoWallModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content glass-card zoom-in">
+            <button id="closePhotoWallModal" class="close-btn" aria-label="关闭">&times;</button>
+            <h3 id="photoWallModalTitle">贴一张新照片 🖼️</h3>
+            <form id="photoWallForm" class="moment-form">
+                <input type="hidden" id="photoWallEditId" value="">
+                <div class="form-group">
+                    <label for="photoWallPhotoInput">照片</label>
+                    <div class="moment-image-uploader">
+                        <label for="photoWallPhotoInput" class="upload-placeholder">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px;height:24px;margin-bottom:6px;opacity:0.8;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                            <span>点击选择要贴上墙的照片</span>
+                        </label>
+                        <input type="file" id="photoWallPhotoInput" accept="image/*" style="display:none;">
+                    </div>
+                    <div id="photoWallPhotoPreview" class="photos-preview-container">
+                        <!-- 动态渲染照片墙单张预览 -->
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="photoWallTitle">标题</label>
+                        <input type="text" id="photoWallTitle" placeholder="给这张照片取个名字..." required maxlength="40">
+                    </div>
+                    <div class="form-group">
+                        <label for="photoWallDate">日期</label>
+                        <input type="date" id="photoWallDate" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="photoWallDesc">描述</label>
+                    <textarea id="photoWallDesc" rows="3" placeholder="写下这张照片背后的小故事..." maxlength="300"></textarea>
+                </div>
+                <button type="submit" id="photoWallSubmitBtn" class="submit-btn">贴上照片墙</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 进入编辑模式弹窗 (Auth Modal) -->
+    <div id="authModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content glass-card zoom-in">
+            <button id="closeAuthModal" class="close-btn" aria-label="关闭">&times;</button>
+            <h3>进入编辑模式 🔓</h3>
+            <form id="authForm" class="config-form">
+                <div class="form-group">
+                    <label for="authType">身份</label>
+                    <select id="authType">
+                        <option value="invite" selected>编辑者邀请码</option>
+                        <option value="admin">管理员密码</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="authSecret">密钥</label>
+                    <input type="password" id="authSecret" required placeholder="请输入密码或邀请码" maxlength="80" autocomplete="current-password">
+                </div>
+                <button type="submit" class="submit-btn">确认进入</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 管理员面板弹窗 (Admin Panel Modal) -->
+    <div id="adminModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content glass-card zoom-in">
+            <button id="closeAdminModal" class="close-btn" aria-label="关闭">&times;</button>
+            <h3>管理员控制面板 🛠️</h3>
+            
+            <div class="admin-section">
+                <h4>生成新邀请码</h4>
+                <form id="createInviteForm" class="config-form">
+                    <div class="form-group">
+                        <label for="inviteDisplayName">编辑者姓名/昵称</label>
+                        <input type="text" id="inviteDisplayName" placeholder="例如：珊珊" required maxlength="10">
+                    </div>
+                    <button type="submit" class="submit-btn">生成邀请码</button>
+                </form>
+                <div id="createdInviteResult" class="created-invite-result hidden" style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.08); border-radius: 6px;">
+                    <p>生成的邀请码：<strong id="newInviteCode" style="color: var(--accent-color); font-size: 18px;"></strong></p>
+                    <p style="font-size: 12px; opacity: 0.8; margin-top: 5px;">请复制此邀请码发送给对方，核销后将变为已使用状态。</p>
+                </div>
+            </div>
+
+            <div class="admin-section" style="margin-top: 25px;">
+                <h4>活动中的编辑者与邀请码</h4>
+                <div id="adminDataList" class="admin-data-list" style="max-height: 200px; overflow-y: auto; margin-top: 10px;">
+                    <!-- 由 JS 动态填充 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加/编辑时光轴弹窗 (Add/Edit Timeline Modal) -->
+    <div id="timelineModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content glass-card zoom-in">
+            <button id="closeTimelineModal" class="close-btn" aria-label="关闭">&times;</button>
+            <h3 id="timelineModalTitle">新增回忆时刻 ⏳</h3>
+            <form id="timelineForm" class="config-form">
+                <input type="hidden" id="timelineEditId" value="">
+                
+                <div class="form-row" style="display: flex; gap: 15px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label for="timelineDate">日期</label>
+                        <input type="date" id="timelineDate" required>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label for="timelineCategory">分类</label>
+                        <select id="timelineCategory" required>
+                            <option value="milestone">里程碑 🏆</option>
+                            <option value="travel">旅行记事 ✈️</option>
+                            <option value="daily">日常生活 🌸</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="timelineTitle">时光标题</label>
+                    <input type="text" id="timelineTitle" placeholder="写下这个瞬间的标题..." required maxlength="20">
+                </div>
+
+                <div class="form-group">
+                    <label for="timelineContent">回忆故事</label>
+                    <textarea id="timelineContent" rows="4" placeholder="写下发生的事情，感受与温暖..." required maxlength="300"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>导入多张照片</label>
+                    <div class="file-upload-wrapper">
+                        <label for="timelinePhotos" class="file-upload-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;margin-right:6px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                            选择照片（可多选）
+                        </label>
+                        <input type="file" id="timelinePhotos" accept="image/*" multiple style="display: none;">
+                    </div>
+                    <!-- 图片预览列表 -->
+                    <div id="timelinePhotosPreview" class="photos-preview-list"></div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="timelineSubmitBtn">收入时光轴</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 网页左侧边栏贴纸群 -->
+    <div class="sidebar-stickers sidebar-stickers-left">
+        <img src="assets/maruko_stickers/sticker_001.png" alt="Sticker" class="sticker-item" style="--rotate: -8deg; --x-shift: -20px; --delay: 0s;">
+        <img src="assets/maruko_stickers/sticker_007.png" alt="Sticker" class="sticker-item" style="--rotate: 8deg; --x-shift: 20px; --delay: 0.3s;">
+        <img src="assets/maruko_stickers/sticker_008.png" alt="Sticker" class="sticker-item" style="--rotate: -6deg; --x-shift: -15px; --delay: 0.6s;">
+        <img src="assets/maruko_stickers/sticker_009.png" alt="Sticker" class="sticker-item" style="--rotate: 7deg; --x-shift: 16px; --delay: 0.9s;">
+        <img src="assets/maruko_stickers/sticker_010.png" alt="Sticker" class="sticker-item" style="--rotate: -7deg; --x-shift: -16px; --delay: 1.2s;">
+        <img src="assets/maruko_stickers/sticker_011.png" alt="Sticker" class="sticker-item" style="--rotate: 6deg; --x-shift: 15px; --delay: 1.5s;">
+        <img src="assets/maruko_stickers/sticker_016.png" alt="Sticker" class="sticker-item" style="--rotate: -9deg; --x-shift: -22px; --delay: 1.8s;">
+        <img src="assets/maruko_stickers/sticker_019.png" alt="Sticker" class="sticker-item" style="--rotate: 8deg; --x-shift: 20px; --delay: 2.1s;">
+        <img src="assets/maruko_stickers/sticker_023.png" alt="Sticker" class="sticker-item" style="--rotate: -5deg; --x-shift: -14px; --delay: 2.4s;">
+        <img src="assets/maruko_stickers/sticker_033.png" alt="Sticker" class="sticker-item" style="--rotate: 6deg; --x-shift: 15px; --delay: 2.7s;">
+    </div>
+
+    <!-- 网页右侧边栏贴纸群 -->
+    <div class="sidebar-stickers sidebar-stickers-right">
+        <img src="assets/maruko_stickers/sticker_034.png" alt="Sticker" class="sticker-item" style="--rotate: 7deg; --x-shift: 16px; --delay: 0.1s;">
+        <img src="assets/maruko_stickers/sticker_035.png" alt="Sticker" class="sticker-item" style="--rotate: -8deg; --x-shift: -20px; --delay: 0.4s;">
+        <img src="assets/maruko_stickers/sticker_037.png" alt="Sticker" class="sticker-item" style="--rotate: 6deg; --x-shift: 14px; --delay: 0.7s;">
+        <img src="assets/maruko_stickers/sticker_039.png" alt="Sticker" class="sticker-item" style="--rotate: -7deg; --x-shift: -16px; --delay: 1.0s;">
+        <img src="assets/maruko_stickers/sticker_040.png" alt="Sticker" class="sticker-item" style="--rotate: 8deg; --x-shift: 20px; --delay: 1.3s;">
+        <img src="assets/maruko_stickers/sticker_044.png" alt="Sticker" class="sticker-item" style="--rotate: -6deg; --x-shift: -15px; --delay: 1.6s;">
+        <img src="assets/maruko_stickers/sticker_052.png" alt="Sticker" class="sticker-item" style="--rotate: 9deg; --x-shift: 22px; --delay: 1.9s;">
+        <img src="assets/maruko_stickers/sticker_054.png" alt="Sticker" class="sticker-item" style="--rotate: -8deg; --x-shift: -20px; --delay: 2.2s;">
+        <img src="assets/maruko_stickers/sticker_058.png" alt="Sticker" class="sticker-item" style="--rotate: 5deg; --x-shift: 12px; --delay: 2.5s;">
+        <img src="assets/maruko_stickers/sticker_032.png" alt="Sticker" class="sticker-item" style="--rotate: -7deg; --x-shift: -16px; --delay: 2.8s;">
+    </div>
+
+    <script src="cloud-config.js?v=1.0.11"></script>
+    <script src="cloud-auth.js?v=1.0.11"></script>
+    <script src="cloud-api.js?v=1.0.11"></script>
+    <script src="app.js?v=1.0.11"></script>
+</body>
+</html>

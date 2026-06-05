@@ -1,0 +1,18 @@
+{
+  "name": "aliyun-dynamic-memory-site",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "api:dev": "node api/src/server.js"
+  },
+  "dependencies": {
+    "ali-oss": "^6.20.0",
+    "tablestore": "^5.0.10"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.0"
+  }
+}
