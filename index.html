@@ -16,6 +16,7 @@
 <body class="light-theme">
     <!-- 背景浮光粒子画布 -->
     <canvas id="particleCanvas"></canvas>
+    <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="false"></div>
 
     <!-- 顶部导航栏 -->
     <header class="navbar">
@@ -475,6 +476,17 @@
         </div>
     </div>
 
+    <div id="confirmDialog" class="confirm-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="confirmDialogTitle">
+        <div class="confirm-dialog-panel glass-card">
+            <h3 id="confirmDialogTitle">确认操作</h3>
+            <p id="confirmDialogMessage"></p>
+            <div class="confirm-dialog-actions">
+                <button type="button" id="confirmDialogCancel" class="secondary-btn">取消</button>
+                <button type="button" id="confirmDialogConfirm" class="submit-btn">确认</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 管理员面板弹窗 (Admin Panel Modal) -->
     <div id="adminModal" class="modal hidden">
         <div class="modal-backdrop"></div>
@@ -589,6 +601,8 @@
     <script src="cloud-config.js?v=1.0.11"></script>
     <script src="cloud-auth.js?v=1.0.11"></script>
     <script src="cloud-api.js?v=1.0.11"></script>
+    <script src="frontend-modules/ui-feedback.js?v=1.0.11"></script>
+    <script src="frontend-modules/music-player.js?v=1.0.11"></script>
     <script src="app.js?v=1.0.11"></script>
 </body>
 </html>

@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { name: 'StrawberryPapa - morning flip', src: 'assets/StrawberryPapa - morning flip.mp3', cover: 'assets/album_cover.jpg' }
     ];
     let currentTrackIdx = 0;
+    let musicPlayerController = null;
 
     // ==========================================
     // 2. DOM 元素获取
@@ -476,7 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!photo) return;
 
         if (!canEditPhotoWallPhoto(photo)) {
-            alert('您只能修改自己创建的照片哦');
+            notify('您只能修改自己创建的照片哦', 'error');
             return;
         }
 
@@ -497,11 +498,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!photo) return;
 
         if (!canEditPhotoWallPhoto(photo)) {
-            alert('您只能删除自己创建的照片哦');
+            notify('您只能删除自己创建的照片哦', 'error');
             return;
         }
 
-        if (!confirm('确定要从照片墙移除这张照片吗？')) return;
+        if (!await askConfirm('确定要从照片墙移除这张照片吗？', { confirmText: '移除' })) return;
 
         try {
             if (String(photo.id).startsWith('default-')) {
@@ -513,7 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
             photoWallPhotos = photoWallPhotos.filter(item => item.id !== photo.id);
             renderPhotoWall();
         } catch (err) {
-            alert('删除照片失败: ' + err.message);
+            notify('删除照片失败: ' + err.message, 'error');
         }
     }
 
@@ -566,7 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             renderNotes();
         } catch (err) {
-            alert('添加留言失败: ' + err.message);
+            notify('添加留言失败: ' + err.message, 'error');
         }
     }
 
@@ -575,23 +576,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!note) return;
 
         if (currentIdentity?.role !== 'admin' && note.authorId !== currentIdentity?.editorId) {
-            alert('您只能删除自己创建的留言哦');
+            notify('您只能删除自己创建的留言哦', 'error');
             return;
         }
 
-        if (confirm('确定要撕掉这张回忆便签吗？这将永久删除它。')) {
-            try {
-                if (typeof note.id === 'number') {
-                    notes.splice(index, 1);
-                    renderNotes();
-                    return;
-                }
-                await window.MemoryCloudApi.deleteNote(note.id);
+        if (!await askConfirm('确定要撕掉这张回忆便签吗？这将永久删除它。', { confirmText: '撕掉' })) return;
+
+        try {
+            if (typeof note.id === 'number') {
                 notes.splice(index, 1);
                 renderNotes();
-            } catch (err) {
-                alert('删除失败: ' + err.message);
+                return;
             }
+            await window.MemoryCloudApi.deleteNote(note.id);
+            notes.splice(index, 1);
+            renderNotes();
+        } catch (err) {
+            notify('删除失败: ' + err.message, 'error');
         }
     }
 
@@ -799,28 +800,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!m) return;
 
         if (currentIdentity?.role !== 'admin' && m.authorId !== currentIdentity?.editorId) {
-            alert('您只能删除自己创建的瞬间哦');
+            notify('您只能删除自己创建的瞬间哦', 'error');
             return;
         }
 
-        if (confirm('确定要移出这刻的美好瞬间吗？')) {
-            const card = momentsGrid.children[index];
-            try {
-                if (typeof m.id === 'number') {
-                    if (card) {
-                        card.classList.add('fade-out');
-                        card.addEventListener('animationend', () => {
-                            moments.splice(index, 1);
-                            renderMoments();
-                        });
-                    } else {
-                        moments.splice(index, 1);
-                        renderMoments();
-                    }
-                    return;
-                }
+        if (!await askConfirm('确定要移出这刻的美好瞬间吗？', { confirmText: '移出' })) return;
 
-                await window.MemoryCloudApi.deleteMoment(m.id);
+        const card = momentsGrid.children[index];
+        try {
+            if (typeof m.id === 'number') {
                 if (card) {
                     card.classList.add('fade-out');
                     card.addEventListener('animationend', () => {
@@ -831,9 +819,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     moments.splice(index, 1);
                     renderMoments();
                 }
-            } catch (err) {
-                alert('删除瞬间失败: ' + err.message);
+                return;
             }
+
+            await window.MemoryCloudApi.deleteMoment(m.id);
+            if (card) {
+                card.classList.add('fade-out');
+                card.addEventListener('animationend', () => {
+                    moments.splice(index, 1);
+                    renderMoments();
+                });
+            } else {
+                moments.splice(index, 1);
+                renderMoments();
+            }
+        } catch (err) {
+            notify('删除瞬间失败: ' + err.message, 'error');
         }
     }
 
@@ -844,172 +845,18 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     }
 
+    function notify(message, type = 'info') {
+        window.MemoryFeedback?.showToast(message, type);
+    }
+
+    function askConfirm(message, options = {}) {
+        return window.MemoryFeedback?.confirmAction(message, options) ?? Promise.resolve(false);
+    }
+
     // ==========================================
     // 6. 音频播放器逻辑
     // ==========================================
-    function setTrack(idx) {
-        currentTrackIdx = idx;
-        audioSource.src = trackList[idx].src;
-        trackTitle.textContent = trackList[idx].name;
-        if (playerDiscCenter && trackList[idx].cover) {
-            playerDiscCenter.style.backgroundImage = `url('${trackList[idx].cover}')`;
-        }
-        renderPlaylist(); // 联动更新歌单高亮状态
-    }
-
-    // 默认设置音量为 0.8 并在加载时渲染歌单
-    audioSource.volume = 0.8;
-    setTrack(0);
-    audioSource.load();
-
-    function setPlaybackUI(isPlaying) {
-        playIcon.style.display = isPlaying ? 'none' : 'block';
-        pauseIcon.style.display = isPlaying ? 'block' : 'none';
-        playerDisc.classList.toggle('playing', isPlaying);
-    }
-
-    audioSource.addEventListener('play', () => setPlaybackUI(true));
-    audioSource.addEventListener('pause', () => setPlaybackUI(false));
-
-    function togglePlay() {
-        if (audioSource.paused) {
-            audioSource.play().then(() => {
-                setPlaybackUI(true);
-            }).catch(err => {
-                console.log("自动播放可能被浏览器静音策略拦截，需用户手动点击播放：", err);
-            });
-        } else {
-            audioSource.pause();
-            setPlaybackUI(false);
-        }
-    }
-
-    playBtn.addEventListener('click', togglePlay);
-
-    prevBtn.addEventListener('click', () => {
-        let prevIdx = currentTrackIdx - 1;
-        if (prevIdx < 0) prevIdx = trackList.length - 1;
-        setTrack(prevIdx);
-        audioSource.play();
-        setPlaybackUI(true);
-    });
-
-    nextBtn.addEventListener('click', () => {
-        let nextIdx = (currentTrackIdx + 1) % trackList.length;
-        setTrack(nextIdx);
-        audioSource.play();
-        setPlaybackUI(true);
-    });
-
-    // 播放模式状态：'list' (列表循环) | 'single' (单曲循环)
-    let playMode = 'list';
-
-    // 播放模式切换交互
-    if (playModeBtn) {
-        playModeBtn.addEventListener('click', () => {
-            if (playMode === 'list') {
-                playMode = 'single';
-                audioSource.loop = true;
-                if (loopListIcon) loopListIcon.style.display = 'none';
-                if (loopSingleIcon) loopSingleIcon.style.display = 'block';
-                playModeBtn.title = '单曲循环';
-                playModeBtn.setAttribute('aria-label', '播放模式：单曲循环');
-            } else {
-                playMode = 'list';
-                audioSource.loop = false;
-                if (loopListIcon) loopListIcon.style.display = 'block';
-                if (loopSingleIcon) loopSingleIcon.style.display = 'none';
-                playModeBtn.title = '列表循环';
-                playModeBtn.setAttribute('aria-label', '播放模式：列表循环');
-            }
-        });
-    }
-
-    // 播放完毕自动切下一首
-    audioSource.addEventListener('ended', () => {
-        if (playMode === 'list') {
-            let nextIdx = (currentTrackIdx + 1) % trackList.length;
-            setTrack(nextIdx);
-            audioSource.play();
-        } else {
-            audioSource.play();
-        }
-    });
-
-    // ==========================================
-    // 6b. 歌单与音量控制业务逻辑
-    // ==========================================
-    function renderPlaylist() {
-        if (!playlistDropdown) return;
-        playlistDropdown.innerHTML = '';
-        trackList.forEach((track, index) => {
-            const item = document.createElement('div');
-            item.className = 'playlist-item' + (index === currentTrackIdx ? ' active' : '');
-            
-            item.textContent = `${index + 1}. ${track.name}`;
-            item.title = track.name;
-            item.setAttribute('role', 'button');
-            item.setAttribute('aria-current', index === currentTrackIdx ? 'true' : 'false');
-            
-            item.addEventListener('click', () => {
-                playTrack(index);
-            });
-            playlistDropdown.appendChild(item);
-        });
-    }
-
-    function playTrack(idx) {
-        setTrack(idx);
-        audioSource.play().then(() => {
-            setPlaybackUI(true);
-        }).catch(err => {
-            console.log("播放被拦截：", err);
-        });
-    }
-
-    // 动态更新音量图标 (🔊 / 🔉 / 🔇)
-    function updateVolumeIcon(vol) {
-        if (!volumeIcon) return;
-        if (vol === 0) {
-            // 静音图标
-            volumeIcon.innerHTML = `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>`;
-        } else if (vol < 0.5) {
-            // 低音量图标 (一波波纹)
-            volumeIcon.innerHTML = `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>`;
-        } else {
-            // 高音量图标 (两波波纹)
-            volumeIcon.innerHTML = `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>`;
-        }
-    }
-
-    // 监听音量滑杆输入
-    if (volumeSlider) {
-        volumeSlider.addEventListener('input', (e) => {
-            const vol = parseFloat(e.target.value);
-            audioSource.volume = vol;
-            updateVolumeIcon(vol);
-        });
-    }
-
-    // 一键静音 / 恢复音量
-    let lastVolume = 0.8;
-    if (volumeBtn) {
-        volumeBtn.addEventListener('click', (e) => {
-            // 防止悬停面板因为点击按钮产生奇怪的折叠
-            e.stopPropagation();
-            
-            if (audioSource.volume > 0) {
-                lastVolume = audioSource.volume;
-                audioSource.volume = 0;
-                if (volumeSlider) volumeSlider.value = 0;
-                updateVolumeIcon(0);
-            } else {
-                audioSource.volume = lastVolume;
-                if (volumeSlider) volumeSlider.value = lastVolume;
-                updateVolumeIcon(lastVolume);
-            }
-        });
-    }
+    musicPlayerController = window.MemoryMusicPlayer.init({ trackList, initialIndex: currentTrackIdx });
 
 
 
@@ -1200,7 +1047,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 momentForm.reset();
                 closeModal(momentModal);
             } catch (err) {
-                alert('保存瞬间失败: ' + err.message);
+                notify('保存瞬间失败: ' + err.message, 'error');
             } finally {
                 momentSubmitBtn.disabled = false;
                 momentSubmitBtn.textContent = editingMomentId !== null ? '保存修改' : '收入美好集';
@@ -1229,7 +1076,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderPhotoWallPreview();
             } catch (err) {
                 console.error('照片墙图片压缩失败:', err);
-                alert(`图片 ${file.name} 读取或压缩失败！`);
+                notify(`图片 ${file.name} 读取或压缩失败！`, 'error');
             } finally {
                 photoWallPhotoInput.value = '';
             }
@@ -1246,7 +1093,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const desc = photoWallDescInput.value.trim();
 
             if (!title || !date || !currentPhotoWallImage) {
-                alert('请至少选择照片，并填写标题和日期');
+                notify('请至少选择照片，并填写标题和日期', 'error');
                 return;
             }
 
@@ -1287,7 +1134,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderPhotoWall();
                 closeModal(photoWallModal);
             } catch (err) {
-                alert('保存照片失败: ' + err.message);
+                notify('保存照片失败: ' + err.message, 'error');
             } finally {
                 photoWallSubmitBtn.disabled = false;
                 photoWallSubmitBtn.textContent = id ? '保存修改' : '贴上照片墙';
@@ -1327,22 +1174,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateMilestoneCard();
 
                 // 检查音乐是否变了
-                const curMusicSrc = audioSource.src;
-                if (!curMusicSrc.includes(newMusic)) {
+                if (newMusic) {
                     const foundIdx = trackList.findIndex(t => t.src === newMusic);
                     if (foundIdx !== -1) {
-                        setTrack(foundIdx);
-                        audioSource.play().then(() => {
-                            playIcon.style.display = 'none';
-                            pauseIcon.style.display = 'block';
-                            playerDisc.classList.add('playing');
-                        });
+                        musicPlayerController?.playTrack(foundIdx);
                     }
                 }
 
                 closeModal(configModal);
             } catch (err) {
-                alert('修改纪念日失败: ' + err.message);
+                notify('修改纪念日失败: ' + err.message, 'error');
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = '保存设置';
@@ -1689,23 +1530,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!item) return;
 
                     if (currentIdentity?.role !== 'admin' && item.authorId !== currentIdentity?.editorId) {
-                        alert('您只能删除自己创建的时光回忆哦');
+                        notify('您只能删除自己创建的时光回忆哦', 'error');
                         return;
                     }
 
-                    if (confirm('确定要删除这刻时光回忆吗？这将无法撤销。')) {
-                        try {
-                            if (typeof item.id === 'number' || !isNaN(Number(item.id))) {
-                                timelineData = timelineData.filter(t => t.id !== id);
-                                renderTimeline();
-                                return;
-                            }
-                            await window.MemoryCloudApi.deleteTimeline(id);
+                    if (!await askConfirm('确定要删除这刻时光回忆吗？这将无法撤销。', { confirmText: '删除' })) return;
+
+                    try {
+                        if (typeof item.id === 'number' || !isNaN(Number(item.id))) {
                             timelineData = timelineData.filter(t => t.id !== id);
                             renderTimeline();
-                        } catch (err) {
-                            alert('删除失败: ' + err.message);
+                            return;
                         }
+                        await window.MemoryCloudApi.deleteTimeline(id);
+                        timelineData = timelineData.filter(t => t.id !== id);
+                        renderTimeline();
+                    } catch (err) {
+                        notify('删除失败: ' + err.message, 'error');
                     }
                 });
             });
@@ -1755,7 +1596,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 } catch (err) {
                     console.error('图片压缩失败:', err);
-                    alert(`图片 ${file.name} 读取或压缩失败！`);
+                    notify(`图片 ${file.name} 读取或压缩失败！`, 'error');
                 }
             }
             renderModalPhotosPreview();
@@ -1825,7 +1666,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderTimeline();
                 closeModal(timelineModal);
             } catch (err) {
-                alert('保存时光回忆失败: ' + err.message);
+                notify('保存时光回忆失败: ' + err.message, 'error');
             } finally {
                 timelineSubmitBtn.disabled = false;
                 timelineSubmitBtn.textContent = id ? '保存修改' : '收入时光轴';
@@ -2208,7 +2049,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             loadCloudData();
         } catch (err) {
-            alert('验证失败: ' + err.message);
+            notify('验证失败: ' + err.message, 'error');
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = '确认进入';
@@ -2229,7 +2070,7 @@ document.addEventListener('DOMContentLoaded', () => {
             inviteDisplayName.value = '';
             loadAdminPanelData();
         } catch (err) {
-            alert('生成失败: ' + err.message);
+            notify('生成失败: ' + err.message, 'error');
         } finally {
             submitBtn.disabled = false;
         }
@@ -2304,7 +2145,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         loadAdminPanelData();
                     } catch (err) {
-                        alert('操作失败: ' + err.message);
+                        notify('操作失败: ' + err.message, 'error');
                         btn.disabled = false;
                         btn.textContent = type === 'editor' ? '撤销' : '失效';
                     }

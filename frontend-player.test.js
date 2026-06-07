@@ -1,5 +1,4 @@
-import { describe, test } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, expect, test } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 
 const appJs = readFileSync(new URL('./app.js', import.meta.url), 'utf8');
@@ -19,80 +18,82 @@ describe('music player playlist', () => {
             'StrawberryPapa - morning flip'
         ];
 
-        assert.equal(trackEntries.length, 7);
-        assert.ok(appJs.includes(`let currentTrackIdx = 0;`));
+        expect(trackEntries.length).toBe(7);
+        expect(appJs.includes(`let currentTrackIdx = 0;`)).toBe(true);
         expectedTracks.forEach((trackName) => {
-            assert.ok(appJs.includes(`name: '${trackName}'`));
+            expect(appJs.includes(`name: '${trackName}'`)).toBe(true);
         });
-        assert.ok(appJs.indexOf(`name: 'Schoolgirl byebye - 爱是'`) < appJs.indexOf(`let currentTrackIdx = 0;`));
-        assert.ok(appJs.includes(`src: 'assets/love_is.mp3'`));
-        assert.ok(appJs.includes("item.className = 'playlist-item' + (index === currentTrackIdx ? ' active' : '')"));
-        assert.ok(appJs.includes('item.textContent = `${index + 1}. ${track.name}`'));
+        expect(appJs.indexOf(`name: 'Schoolgirl byebye - 爱是'`) < appJs.indexOf(`let currentTrackIdx = 0;`)).toBe(true);
+        expect(appJs.includes(`src: 'assets/love_is.mp3'`)).toBe(true);
+        expect(appJs.includes("item.className = 'playlist-item' + (index === currentTrackIdx ? ' active' : '')")).toBe(false);
+        expect(appJs.includes('window.MemoryMusicPlayer.init')).toBe(true);
+        expect(readFileSync(new URL('./frontend-modules/music-player.js', import.meta.url), 'utf8').includes('item.textContent = `${index + 1}. ${track.name}`')).toBe(true);
     });
 
     test('allows the full dropdown to escape the player info area and shadows the active track', () => {
         const trackInfoRule = stylesCss.match(/\.track-info\s*\{[^}]+\}/)?.[0] || '';
         const activeRule = stylesCss.match(/\.playlist-item\.active\s*\{[^}]+\}/)?.[0] || '';
 
-        assert.ok(trackInfoRule.includes('overflow: visible'));
-        assert.ok(activeRule.includes('box-shadow'));
+        expect(trackInfoRule.includes('overflow: visible')).toBe(true);
+        expect(activeRule.includes('box-shadow')).toBe(true);
     });
 
     test('keeps the vertical volume slider high at the top and low at the bottom', () => {
         const volumeSliderRule = stylesCss.match(/\.volume-slider\s*\{[^}]+\}/)?.[0] || '';
 
-        assert.ok(volumeSliderRule.includes('writing-mode: vertical-lr'));
-        assert.ok(volumeSliderRule.includes('direction: rtl'));
+        expect(volumeSliderRule.includes('writing-mode: vertical-lr')).toBe(true);
+        expect(volumeSliderRule.includes('direction: rtl')).toBe(true);
     });
 
     test('does not autoplay or install global unlock listeners', () => {
         const audioTag = indexHtml.match(/<audio[^>]+id="audioSource"[^>]*>/)?.[0] || '';
 
-        assert.ok(!audioTag.includes('autoplay'));
-        assert.ok(!appJs.includes('function startAutoplay()'));
-        assert.ok(!appJs.includes("document.addEventListener('pointerdown', startAutoplay)"));
-        assert.ok(!appJs.includes("document.addEventListener('click', startAutoplay)"));
-        assert.ok(appJs.includes(`audioSource.addEventListener('play'`));
-        assert.ok(appJs.includes(`audioSource.addEventListener('pause'`));
+        expect(audioTag.includes('autoplay')).toBe(false);
+        expect(appJs.includes('function startAutoplay()')).toBe(false);
+        expect(appJs.includes("document.addEventListener('pointerdown', startAutoplay)")).toBe(false);
+        expect(appJs.includes("document.addEventListener('click', startAutoplay)")).toBe(false);
+        const musicPlayerJs = readFileSync(new URL('./frontend-modules/music-player.js', import.meta.url), 'utf8');
+        expect(musicPlayerJs.includes(`audioSource.addEventListener('play'`)).toBe(true);
+        expect(musicPlayerJs.includes(`audioSource.addEventListener('pause'`)).toBe(true);
     });
 });
 
 describe('anniversary companion panel', () => {
     test('renders birthday and anniversary countdown fields next to the counter card', () => {
-        assert.ok(indexHtml.includes('anniversary-layout'));
-        assert.ok(indexHtml.includes('milestone-card'));
-        assert.ok(indexHtml.includes('nextBirthdayName'));
-        assert.ok(indexHtml.includes('nextBirthdayDays'));
-        assert.ok(indexHtml.includes('nextAnniversaryDays'));
-        assert.ok(appJs.includes("date: '2004-06-23'"));
-        assert.ok(appJs.includes("date: '2002-11-28'"));
-        assert.ok(appJs.includes('function getNextAnnualDate'));
-        assert.ok(appJs.includes('function updateMilestoneCard'));
+        expect(indexHtml.includes('anniversary-layout')).toBe(true);
+        expect(indexHtml.includes('milestone-card')).toBe(true);
+        expect(indexHtml.includes('nextBirthdayName')).toBe(true);
+        expect(indexHtml.includes('nextBirthdayDays')).toBe(true);
+        expect(indexHtml.includes('nextAnniversaryDays')).toBe(true);
+        expect(appJs.includes("date: '2004-06-23'")).toBe(true);
+        expect(appJs.includes("date: '2002-11-28'")).toBe(true);
+        expect(appJs.includes('function getNextAnnualDate')).toBe(true);
+        expect(appJs.includes('function updateMilestoneCard')).toBe(true);
     });
 
     test('stacks the milestone panel below the counter on mobile', () => {
         const layoutRule = stylesCss.match(/\.anniversary-layout\s*\{[^}]+\}/)?.[0] || '';
         const mobileBlock = stylesCss.match(/@media \(max-width: 900px\)\s*\{[\s\S]+?\.anniversary-layout\s*\{[\s\S]+?\n    \}/)?.[0] || '';
 
-        assert.ok(layoutRule.includes('display: grid'));
-        assert.ok(layoutRule.includes('grid-template-columns'));
-        assert.ok(mobileBlock.includes('grid-template-columns: 1fr'));
+        expect(layoutRule.includes('display: grid')).toBe(true);
+        expect(layoutRule.includes('grid-template-columns')).toBe(true);
+        expect(mobileBlock.includes('grid-template-columns: 1fr')).toBe(true);
     });
 
     test('keeps default anniversary values when cloud config is empty', () => {
-        assert.ok(appJs.includes('const cloudConfig = configResult.config || {};'));
-        assert.ok(appJs.includes('partnerName = cloudConfig.partnerName || partnerName;'));
-        assert.ok(appJs.includes('anniversaryStr = cloudConfig.anniversaryDate || anniversaryStr;'));
+        expect(appJs.includes('const cloudConfig = configResult.config || {};')).toBe(true);
+        expect(appJs.includes('partnerName = cloudConfig.partnerName || partnerName;')).toBe(true);
+        expect(appJs.includes('anniversaryStr = cloudConfig.anniversaryDate || anniversaryStr;')).toBe(true);
     });
 });
 
 describe('stardew wedding hero scene', () => {
     test('places the wedding screenshot under the names with two huts on each side', () => {
-        assert.ok(existsSync(new URL('./assets/stardew_wedding.png', import.meta.url)));
-        assert.ok(existsSync(new URL('./assets/junimo_hut.png', import.meta.url)));
-        assert.ok(indexHtml.includes('stardew-wedding-scene'));
-        assert.ok(indexHtml.includes('assets/stardew_wedding.png'));
-        assert.equal(indexHtml.split('assets/junimo_hut.png').length - 1, 4);
+        expect(existsSync(new URL('./assets/stardew_wedding.png', import.meta.url))).toBe(true);
+        expect(existsSync(new URL('./assets/junimo_hut.png', import.meta.url))).toBe(true);
+        expect(indexHtml.includes('stardew-wedding-scene')).toBe(true);
+        expect(indexHtml.includes('assets/stardew_wedding.png')).toBe(true);
+        expect(indexHtml.split('assets/junimo_hut.png').length - 1).toBe(4);
     });
 
     test('keeps the wedding scene responsive on mobile', () => {
@@ -100,10 +101,10 @@ describe('stardew wedding hero scene', () => {
         const imageRule = stylesCss.match(/\.stardew-wedding-frame img\s*\{[^}]+\}/)?.[0] || '';
         const mobileBlock = stylesCss.match(/@media \(max-width: 900px\)\s*\{[\s\S]+?\.stardew-wedding-scene\s*\{[\s\S]+?\n    \}[\s\S]+?\.stardew-hut-side\s*\{[\s\S]+?\n    \}/)?.[0] || '';
 
-        assert.ok(sceneRule.includes('display: grid'));
-        assert.ok(imageRule.includes('image-rendering: pixelated'));
-        assert.ok(mobileBlock.includes('grid-template-columns: 1fr'));
-        assert.ok(mobileBlock.includes('display: flex'));
+        expect(sceneRule.includes('display: grid')).toBe(true);
+        expect(imageRule.includes('image-rendering: pixelated')).toBe(true);
+        expect(mobileBlock.includes('grid-template-columns: 1fr')).toBe(true);
+        expect(mobileBlock.includes('display: flex')).toBe(true);
     });
 
     test('lets the hero grow with the wedding scene and photo wall content', () => {
@@ -112,14 +113,14 @@ describe('stardew wedding hero scene', () => {
         const scrollArrowRule = stylesCss.match(/\.scroll-down-arrow\s*\{[^}]+\}/)?.[0] || '';
         const timelineRule = stylesCss.match(/#timeline\s*\{[^}]+\}/)?.[0] || '';
 
-        assert.ok(heroRule.includes('height: auto'));
-        assert.ok(heroRule.includes('min-height: 100vh'));
-        assert.ok(heroRule.includes('justify-content: flex-start'));
-        assert.ok(heroRule.includes('padding: 110px 20px 36px'));
-        assert.ok(heroContentRule.includes('padding-top: 0'));
-        assert.ok(!scrollArrowRule.includes('position: absolute'));
-        assert.ok(scrollArrowRule.includes('margin-top: 12px'));
-        assert.ok(timelineRule.includes('margin-top: 48px'));
+        expect(heroRule.includes('height: auto')).toBe(true);
+        expect(heroRule.includes('min-height: 100vh')).toBe(true);
+        expect(heroRule.includes('justify-content: flex-start')).toBe(true);
+        expect(heroRule.includes('padding: 110px 20px 36px')).toBe(true);
+        expect(heroContentRule.includes('padding-top: 0')).toBe(true);
+        expect(scrollArrowRule.includes('position: absolute')).toBe(false);
+        expect(scrollArrowRule.includes('margin-top: 12px')).toBe(true);
+        expect(timelineRule.includes('margin-top: 48px')).toBe(true);
     });
 });
 
@@ -129,15 +130,15 @@ describe('freeform memory photo wall', () => {
         const wallIndex = indexHtml.indexOf('id="photo-wall"');
         const timelineIndex = indexHtml.indexOf('id="timeline"');
 
-        assert.ok(wallIndex > heroIndex);
-        assert.ok(timelineIndex > wallIndex);
-        assert.ok(indexHtml.includes('<a href="#photo-wall">照片墙</a>'));
-        assert.ok(indexHtml.includes('memory-wall-stage'));
-        assert.ok(appJs.includes('let photoWallPhotos = []'));
-        assert.ok(appJs.includes('function renderPhotoWall'));
-        assert.ok(appJs.includes('window.MemoryCloudApi.getPhotoWall()'));
-        assert.ok(!appJs.includes('function collectPhotoWallImages'));
-        assert.ok(appJs.includes('renderPhotoWall();'));
+        expect(wallIndex > heroIndex).toBe(true);
+        expect(timelineIndex > wallIndex).toBe(true);
+        expect(indexHtml.includes('<a href="#photo-wall">照片墙</a>')).toBe(true);
+        expect(indexHtml.includes('memory-wall-stage')).toBe(true);
+        expect(appJs.includes('let photoWallPhotos = []')).toBe(true);
+        expect(appJs.includes('function renderPhotoWall')).toBe(true);
+        expect(appJs.includes('window.MemoryCloudApi.getPhotoWall()')).toBe(true);
+        expect(appJs.includes('function collectPhotoWallImages')).toBe(false);
+        expect(appJs.includes('renderPhotoWall();')).toBe(true);
     });
 
     test('uses free scattered desktop layout and a two-column mobile layout', () => {
@@ -145,65 +146,65 @@ describe('freeform memory photo wall', () => {
         const desktopPhotoRule = stylesCss.match(/\.memory-wall-photo\s*\{[^}]+\}/)?.[0] || '';
         const mobileBlock = stylesCss.match(/@media \(max-width: 900px\)\s*\{[\s\S]+?\.memory-wall-stage\s*\{[\s\S]+?\n    \}[\s\S]+?\.memory-wall-photo\s*\{[\s\S]+?\n    \}/)?.[0] || '';
 
-        assert.ok(wallRule.includes('position: relative'));
-        assert.ok(desktopPhotoRule.includes('position: absolute'));
-        assert.ok(mobileBlock.includes('grid-template-columns: repeat(2, minmax(0, 1fr))'));
-        assert.ok(mobileBlock.includes('position: relative'));
+        expect(wallRule.includes('position: relative')).toBe(true);
+        expect(desktopPhotoRule.includes('position: absolute')).toBe(true);
+        expect(mobileBlock.includes('grid-template-columns: repeat(2, minmax(0, 1fr))')).toBe(true);
+        expect(mobileBlock.includes('position: relative')).toBe(true);
     });
 
     test('does not stretch mobile photo cards into tall grid rows', () => {
         const mobileBlock = stylesCss.match(/@media \(max-width: 900px\)\s*\{[\s\S]+?\.memory-wall-stage\s*\{[\s\S]+?\n    \}[\s\S]+?\.memory-wall-photo\s*\{[\s\S]+?\n    \}/)?.[0] || '';
 
-        assert.ok(mobileBlock.includes('align-items: start'));
-        assert.ok(mobileBlock.includes('align-self: start'));
-        assert.ok(mobileBlock.includes('height: fit-content'));
-        assert.ok(appJs.includes("const isCompactPhotoWall = window.matchMedia('(max-width: 900px)').matches;"));
-        assert.ok(appJs.includes('memoryPhotoWall.style.minHeight = isCompactPhotoWall'));
+        expect(mobileBlock.includes('align-items: start')).toBe(true);
+        expect(mobileBlock.includes('align-self: start')).toBe(true);
+        expect(mobileBlock.includes('height: fit-content')).toBe(true);
+        expect(appJs.includes("const isCompactPhotoWall = window.matchMedia('(max-width: 900px)').matches;")).toBe(true);
+        expect(appJs.includes('memoryPhotoWall.style.minHeight = isCompactPhotoWall')).toBe(true);
     });
 });
 
 describe('moment image ratios', () => {
     test('sizes beautiful moment images from their natural image ratio', () => {
-        assert.ok(appJs.includes('function applyNaturalImageRatio'));
-        assert.ok(appJs.includes("wrapper.style.setProperty('--ratio', naturalRatio);"));
-        assert.ok(appJs.includes("const imgEls = card.querySelectorAll('.moment-img-wrapper img');"));
-        assert.ok(appJs.includes("imgEl.addEventListener('load', () => applyNaturalImageRatio(imgEl), { once: true });"));
-        assert.ok(stylesCss.includes('aspect-ratio: var(--ratio, 4 / 3);'));
-        assert.ok(stylesCss.includes('object-fit: cover;'));
-        assert.ok(stylesCss.includes('max-height: none;'));
+        expect(appJs.includes('function applyNaturalImageRatio')).toBe(true);
+        expect(appJs.includes("wrapper.style.setProperty('--ratio', naturalRatio);")).toBe(true);
+        expect(appJs.includes("const imgEls = card.querySelectorAll('.moment-img-wrapper img');")).toBe(true);
+        expect(appJs.includes("imgEl.addEventListener('load', () => applyNaturalImageRatio(imgEl), { once: true });")).toBe(true);
+        expect(stylesCss.includes('aspect-ratio: var(--ratio, 4 / 3);')).toBe(true);
+        expect(stylesCss.includes('object-fit: cover;')).toBe(true);
+        expect(stylesCss.includes('max-height: none;')).toBe(true);
     });
 });
 
 describe('cloud content lifecycle', () => {
     test('does not restore generated placeholder content after cloud data is empty', () => {
-        assert.ok(appJs.includes('const defaultNotes = [];'));
-        assert.ok(appJs.includes('const defaultMoments = [];'));
-        assert.ok(appJs.includes('const defaultTimeline = [];'));
-        assert.ok(appJs.includes('const defaultPhotoWall = [];'));
-        assert.ok(appJs.includes('notes = notesResult.notes.map(n => ({'));
-        assert.ok(appJs.includes('moments = momentsResult.moments;'));
-        assert.ok(appJs.includes('timelineData = timelineResult.timeline;'));
-        assert.ok(appJs.includes('photoWallPhotos = photoWallResult.photos;'));
-        assert.equal(appJs.includes(': defaultNotes'), false);
-        assert.equal(appJs.includes(': defaultMoments'), false);
-        assert.equal(appJs.includes(': defaultTimeline'), false);
-        assert.equal(appJs.includes(': defaultPhotoWall'), false);
+        expect(appJs.includes('const defaultNotes = [];')).toBe(true);
+        expect(appJs.includes('const defaultMoments = [];')).toBe(true);
+        expect(appJs.includes('const defaultTimeline = [];')).toBe(true);
+        expect(appJs.includes('const defaultPhotoWall = [];')).toBe(true);
+        expect(appJs.includes('notes = notesResult.notes.map(n => ({')).toBe(true);
+        expect(appJs.includes('moments = momentsResult.moments;')).toBe(true);
+        expect(appJs.includes('timelineData = timelineResult.timeline;')).toBe(true);
+        expect(appJs.includes('photoWallPhotos = photoWallResult.photos;')).toBe(true);
+        expect(appJs.includes(': defaultNotes')).toBe(false);
+        expect(appJs.includes(': defaultMoments')).toBe(false);
+        expect(appJs.includes(': defaultTimeline')).toBe(false);
+        expect(appJs.includes(': defaultPhotoWall')).toBe(false);
     });
 
     test('defines a stable mobile light background instead of relying on inherited dark defaults', () => {
         const mobileLightBlock = stylesCss.match(/@media \(max-width: 900px\)\s*\{[\s\S]+?body\.light-theme\s*\{[\s\S]+?\n    \}[\s\S]+?body\.light-theme #particleCanvas\s*\{[\s\S]+?\n    \}/)?.[0] || '';
 
-        assert.ok(mobileLightBlock.includes('background-color: #fdf6f0'));
-        assert.ok(mobileLightBlock.includes('background-image: linear-gradient'));
-        assert.ok(mobileLightBlock.includes('opacity: 0.45'));
+        expect(mobileLightBlock.includes('background-color: #fdf6f0')).toBe(true);
+        expect(mobileLightBlock.includes('background-image: linear-gradient')).toBe(true);
+        expect(mobileLightBlock.includes('opacity: 0.45')).toBe(true);
     });
 
     test('prevents mobile browsers from auto-darkening light theme surfaces', () => {
-        assert.ok(stylesCss.includes('color-scheme: light;'));
-        assert.ok(stylesCss.includes('body.light-theme .navbar'));
-        assert.ok(stylesCss.includes('body.light-theme .music-player'));
-        assert.ok(stylesCss.includes('body.light-theme .corkboard'));
-        assert.ok(stylesCss.includes('background: rgba(255, 255, 255, 0.92)'));
-        assert.ok(stylesCss.includes('background: rgba(255, 250, 246, 0.86)'));
+        expect(stylesCss.includes('color-scheme: light;')).toBe(true);
+        expect(stylesCss.includes('body.light-theme .navbar')).toBe(true);
+        expect(stylesCss.includes('body.light-theme .music-player')).toBe(true);
+        expect(stylesCss.includes('body.light-theme .corkboard')).toBe(true);
+        expect(stylesCss.includes('background: rgba(255, 255, 255, 0.92)')).toBe(true);
+        expect(stylesCss.includes('background: rgba(255, 250, 246, 0.86)')).toBe(true);
     });
 });

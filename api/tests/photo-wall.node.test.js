@@ -1,5 +1,4 @@
-import { describe, test } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, expect, test } from 'vitest';
 import { createHandlers } from '../src/handlers.js';
 import { createMemoryStore } from '../src/store.memory.js';
 import { hashSecret } from '../src/security.js';
@@ -38,9 +37,9 @@ describe('photo wall API', () => {
 
     const response = await call(app, 'GET', '/photo-wall');
 
-    assert.equal(response.status, 200);
-    assert.equal(response.body.photos.length, 1);
-    assert.equal(response.body.photos[0].title, '夏夜晚风');
+    expect(response.status).toBe(200);
+    expect(response.body.photos.length).toBe(1);
+    expect(response.body.photos[0].title).toBe('夏夜晚风');
   });
 
   test('requires editor permission and enforces ownership for mutations', async () => {
@@ -54,7 +53,7 @@ describe('photo wall API', () => {
       title: '不能这样贴',
       src: 'assets/first_meet.jpg'
     });
-    assert.equal(visitorCreate.status, 401);
+    expect(visitorCreate.status).toBe(401);
 
     const adminLogin = await call(app, 'POST', '/auth/admin/login', { password: 'admin-pass' });
     const firstClaim = await claimEditor(app, adminLogin.body.token, '珊珊');
@@ -68,31 +67,31 @@ describe('photo wall API', () => {
       ratio: '16 / 9'
     }, firstClaim.body.token);
 
-    assert.equal(created.status, 201);
-    assert.equal(created.body.photo.authorName, '珊珊');
-    assert.equal(created.body.photo.ratio, '16 / 9');
+    expect(created.status).toBe(201);
+    expect(created.body.photo.authorName).toBe('珊珊');
+    expect(created.body.photo.ratio).toBe('16 / 9');
 
     const blockedUpdate = await call(app, 'PATCH', `/photo-wall/${created.body.photo.id}`, {
       title: '别人不能改'
     }, secondClaim.body.token);
-    assert.equal(blockedUpdate.status, 403);
+    expect(blockedUpdate.status).toBe(403);
 
     const updated = await call(app, 'PATCH', `/photo-wall/${created.body.photo.id}`, {
       title: '公交车上的第一张合影',
       desc: '把那天贴上墙',
       ratio: '3 / 4'
     }, firstClaim.body.token);
-    assert.equal(updated.status, 200);
-    assert.equal(updated.body.photo.title, '公交车上的第一张合影');
-    assert.equal(updated.body.photo.ratio, '3 / 4');
+    expect(updated.status).toBe(200);
+    expect(updated.body.photo.title).toBe('公交车上的第一张合影');
+    expect(updated.body.photo.ratio).toBe('3 / 4');
 
     const blockedDelete = await call(app, 'DELETE', `/photo-wall/${created.body.photo.id}`, {}, secondClaim.body.token);
-    assert.equal(blockedDelete.status, 403);
+    expect(blockedDelete.status).toBe(403);
 
     const adminDelete = await call(app, 'DELETE', `/photo-wall/${created.body.photo.id}`, {}, adminLogin.body.token);
-    assert.equal(adminDelete.status, 200);
+    expect(adminDelete.status).toBe(200);
 
     const listed = await call(app, 'GET', '/photo-wall');
-    assert.equal(listed.body.photos.length, 0);
+    expect(listed.body.photos.length).toBe(0);
   });
 });
