@@ -4,9 +4,9 @@ This file is the project's required iteration log. Every optimization, bug fix, 
 
 ## Current Version
 
-- Version: `v0.2.1`
+- Version: `v0.2.2`
 - Date: 2026-06-07
-- Status: Documentation and workflow release
+- Status: Deployment-output workflow release
 - GitHub: `origin/main`
 
 ## Required Release Workflow
@@ -30,8 +30,28 @@ node --check index.mjs
 5. Commit the relevant files only.
 6. Create the next version tag.
 7. Push `main` and the new tag to GitHub.
+8. In the final response, output the cloud deployment upload list for this release.
 
 ## Versions
+
+### `v0.2.2` - 2026-06-07
+
+Purpose: require every future development completion message to include the cloud deployment upload list.
+
+Changes:
+
+- Updated `AGENTS.md` to require a `Cloud Deployment Files` section in final responses.
+- Clarified that future releases must state whether frontend OSS files, backend FC files, configuration, or database changes need cloud updates.
+- Updated this version history workflow so deployment upload guidance is part of every iteration.
+
+Verification:
+
+- `npm test`
+- `node --check app.js`
+- `node --check frontend-modules/music-player.js`
+- `node --check frontend-modules/ui-feedback.js`
+- `node --check cloud-api.js`
+- `node --check index.mjs`
 
 ### `v0.2.1` - 2026-06-07
 

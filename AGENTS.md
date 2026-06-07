@@ -21,6 +21,7 @@ When the user asks for any optimization, bug fix, feature, UI change, deployment
 6. Commit only the relevant files.
 7. Tag the release with the new version number.
 8. Push `main` and the new tag to GitHub.
+9. In the final response, include a cloud deployment upload list that tells the user exactly which files or folders must be uploaded for this release.
 
 ## Version Numbering
 
@@ -59,6 +60,19 @@ git push origin main
 git push origin <version-tag>
 ```
 
+## Cloud Deployment Output
+
+After every completed development iteration, the final response must include a section named `Cloud Deployment Files`.
+
+In that section, list the files and folders that need to be uploaded or updated in the cloud for the current release:
+
+- Frontend OSS files, when the visible site changed.
+- Backend FC package files, when API/server behavior changed.
+- Configuration or database changes, when environment variables, TableStore tables, OSS buckets, or deployment settings changed.
+- `No cloud runtime upload needed` when the release only changes local docs, tests, or agent workflow files.
+
+Keep this list specific to the current release. Do not include unrelated dirty local files or files that were not part of the release commit.
+
 ## Current User Preference
 
-The user wants future development windows to automatically preserve version history. Every new optimization or feature should update `VERSION_HISTORY.md`, create a new Git version, and upload the version to GitHub by default.
+The user wants future development windows to automatically preserve version history. Every new optimization or feature should update `VERSION_HISTORY.md`, create a new Git version, upload the version to GitHub by default, and clearly state which files must be uploaded to the cloud deployment.
